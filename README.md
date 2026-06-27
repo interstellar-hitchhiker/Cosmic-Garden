@@ -1,6 +1,8 @@
 # Cosmic-Garden
 A single-file browser universe where you launch planets, stars, black holes, comets, and life into a living gravity sandbox.
 
+**https://interstellar-hitchhiker.github.io/Cosmic-Garden/**
+
 **Design purpose:**
 Its purpose is to turn physics into play, letting the user *feel* motion, force, orbit, chaos, balance, and emergence rather than merely read about them.
 

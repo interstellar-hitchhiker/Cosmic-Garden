@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cosmic Garden — Single-File Universe Toy</title>
+<style>
+  :root{
+    --bg:#05060c;
+    --panel:rgba(10,14,28,.72);
+    --panel2:rgba(16,23,44,.86);
+    --line:rgba(255,255,255,.13);
+    --line2:rgba(124,196,255,.32);
+    --text:#eef6ff;
+    --muted:#a9b7d0;
+    --accent:#8bd3ff;
+    --hot:#ff9a7a;
+    --life:#a4ffbf;
+    --warn:#ffd36e;
+    --shadow:rgba(0,0,0,.48);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 38%,#11183a 0%,#060812 55%,#020308 100%);cursor:crosshair;}
+  .topbar{position:fixed;left:16px;right:16px;top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none;z-index:5}
+  .brand{pointer-events:auto;min-width:230px;max-width:min(520px,calc(100vw - 32px));padding:12px 14px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(13,18,35,.76),rgba(8,11,22,.58));box-shadow:0 18px 60px var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .brand h1{margin:0;font-size:18px;letter-spacing:.35px;line-height:1.1}
+  .brand p{margin:6px 0 0;color:var(--muted);font-size:12.5px;line-height:1.35}.brand strong{color:var(--text)}
+  .score{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(9,13,27,.65);box-shadow:0 18px 60px var(--shadow);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);white-space:nowrap;color:var(--muted);font-size:13px}.score b{color:var(--text);font-size:15px}.dot{width:8px;height:8px;border-radius:99px;background:var(--life);box-shadow:0 0 18px var(--life)}
+  .panel{position:fixed;left:16px;bottom:16px;width:min(430px,calc(100vw - 32px));max-height:calc(100vh - 150px);overflow:auto;z-index:6;padding:13px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(10,15,30,.82),rgba(6,9,18,.68));box-shadow:0 24px 80px var(--shadow);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .panel::-webkit-scrollbar{width:8px}.panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:12px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.spread{justify-content:space-between}.section{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.09)}.section:first-child{margin-top:0;padding-top:0;border-top:0}.tiny{font-size:11.5px;color:var(--muted);line-height:1.35}.label{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#b7c7e5;margin:0 0 8px}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.055);color:var(--muted);font-size:12px}.pill b{color:var(--text)}
+  button,select,input[type="file"]::file-selector-button{appearance:none;border:1px solid rgba(255,255,255,.13);border-radius:13px;background:linear-gradient(180deg,rgba(27,40,70,.96),rgba(14,22,42,.96));color:var(--text);font:inherit;font-size:12.5px;font-weight:750;padding:9px 10px;cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease,opacity .12s ease;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  button:hover,select:hover,input[type="file"]::file-selector-button:hover{transform:translateY(-1px);border-color:rgba(139,211,255,.65);background:linear-gradient(180deg,rgba(40,62,105,.96),rgba(19,31,58,.96))}button:active{transform:translateY(1px)}button.active{border-color:rgba(164,255,191,.72);box-shadow:0 0 0 1px rgba(164,255,191,.14),0 0 28px rgba(164,255,191,.10),inset 0 1px 0 rgba(255,255,255,.1)}button.hot{background:linear-gradient(180deg,rgba(142,59,55,.96),rgba(75,24,31,.96));border-color:rgba(255,154,122,.35)}button.good{background:linear-gradient(180deg,rgba(38,108,76,.96),rgba(21,56,45,.96));border-color:rgba(164,255,191,.35)}button.ghost{background:rgba(255,255,255,.055)}button.wide{flex:1 1 120px}.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.tools button{padding:9px 6px}.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  label.control{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:8px 0;color:var(--muted);font-size:12.5px}label.control output{font-variant-numeric:tabular-nums;color:var(--text);font-weight:750}input[type="range"]{grid-column:1/-1;width:100%;accent-color:var(--accent)}select{padding-right:28px;max-width:100%}input[type="file"]{max-width:100%;color:var(--muted);font-size:12px}.rightdock{position:fixed;right:16px;bottom:16px;width:min(360px,calc(100vw - 32px));z-index:6;padding:13px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(10,15,30,.76),rgba(6,9,18,.62));box-shadow:0 24px 80px var(--shadow);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .log{max-height:168px;overflow:auto;padding-right:3px}.log div{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07);color:var(--muted);font-size:12.3px;line-height:1.35}.log div:first-child{color:var(--text)}.help{position:fixed;right:16px;top:86px;width:min(360px,calc(100vw - 32px));z-index:4;padding:12px 13px;border:1px solid rgba(139,211,255,.16);border-radius:18px;background:rgba(8,12,25,.46);backdrop-filter:blur(11px);-webkit-backdrop-filter:blur(11px);color:var(--muted);font-size:12.3px;line-height:1.38;box-shadow:0 18px 50px var(--shadow)}kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-bottom-width:2px;border-radius:7px;padding:1px 5px;color:var(--text)}
+  .mobile-toggle{display:none;position:fixed;z-index:10;right:14px;top:14px}.flash{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;font-weight:900;font-size:clamp(34px,8vw,104px);letter-spacing:.04em;color:rgba(255,255,255,.08);text-shadow:0 0 70px rgba(139,211,255,.2);opacity:0;transition:opacity .4s ease;z-index:2}.flash.show{opacity:1;transition:opacity .06s ease}.legend{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}.legend span{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.sw{width:12px;height:12px;border-radius:50%;box-shadow:0 0 12px currentColor}.modal{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:rgba(0,0,0,.5);backdrop-filter:blur(8px)}.modal.open{display:grid}.dialog{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:18px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(14,20,39,.96),rgba(7,10,20,.96));box-shadow:0 30px 120px rgba(0,0,0,.65)}.dialog h2{margin:0 0 8px}.dialog p,.dialog li{color:var(--muted);line-height:1.5}.dialog textarea{width:100%;height:190px;margin-top:10px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.25);color:var(--text);padding:12px;font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical}.closex{float:right}.hidden{display:none!important}
+  @media(max-width:880px){.rightdock,.help{display:none}.topbar{right:64px}.score{display:none}.panel{max-height:45vh}.mobile-toggle{display:block}.tools{grid-template-columns:repeat(3,1fr)}.preset-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.brand{display:none}.panel{left:10px;right:10px;bottom:10px;width:auto}.tools{grid-template-columns:repeat(2,1fr)}.preset-grid{grid-template-columns:1fr}.panel.collapsed{display:none}.topbar{display:none}.mobile-toggle{display:block}}
+</style>
+</head>
+<body>
+<canvas id="space" aria-label="Cosmic Garden simulation canvas"></canvas>
+<div class="flash" id="flash">BLOOM</div>
+<button class="mobile-toggle" id="mobileToggle">Controls</button>
+
+<div class="topbar">
+  <div class="brand">
+    <h1>Cosmic Garden</h1>
+    <p>A tiny universe you can grow, ruin, stabilise, and photograph. Drag to launch bodies; change tools to sculpt gravity, life, and chaos.</p>
+  </div>
+  <div class="score" title="A rough measure of variety, living sparks, stable motion and low catastrophe."><span class="dot"></span> Wonder <b id="wonderScore">0</b><span id="mood">quiet void</span></div>
+</div>
+
+<aside class="help">
+  <strong style="color:var(--text)">Controls:</strong> drag with the selected tool. <kbd>Space</kbd> pause, <kbd>1–5</kbd> tools, <kbd>G</kbd> galaxy, <kbd>L</kbd> life, <kbd>C</kbd> comets, <kbd>R</kbd> reset, <kbd>H</kbd> hide panels. A planet launched gently near a star may fall into orbit.
+</aside>
+
+<section class="panel" id="panel">
+  <div class="section">
+    <div class="row spread">
+      <div>
+        <div class="label">Tools</div>
+        <div class="tiny" id="toolHint">Drag to launch a planet. Longer drag = faster orbit attempt.</div>
+      </div>
+      <button class="ghost" id="hideBtn" title="Hide panels">Hide</button>
+    </div>
+    <div class="tools" id="tools">
+      <button data-tool="planet" class="active">Planet</button>
+      <button data-tool="star">Star</button>
+      <button data-tool="blackhole">Void</button>
+      <button data-tool="life">Life</button>
+      <button data-tool="gravity">Gravity</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Universe controls</div>
+    <div class="row">
+      <button id="pauseBtn" class="wide">Pause</button>
+      <button id="stepBtn">Step</button>
+      <button id="clearBtn" class="hot">Reset</button>
+      <button id="soundBtn" class="good">Sound</button>
+    </div>
+    <label class="control">Gravity <output id="gOut">0.55</output><input id="gRange" type="range" min="0" max="1.6" step="0.01" value="0.55"></label>
+    <label class="control">Time flow <output id="tOut">1.00×</output><input id="tRange" type="range" min="0.05" max="2.4" step="0.01" value="1"></label>
+    <label class="control">Trail length <output id="trailOut">110</output><input id="trailRange" type="range" min="0" max="360" step="1" value="110"></label>
+    <label class="control">Birth / chaos <output id="birthOut">0.32</output><input id="birthRange" type="range" min="0" max="1" step="0.01" value="0.32"></label>
+    <div class="row">
+      <label class="pill"><input id="collideBox" type="checkbox" checked> Collisions</label>
+      <label class="pill"><input id="wrapBox" type="checkbox"> Wrap edges</label>
+      <label class="pill"><input id="autoBox" type="checkbox"> Auto-life</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Presets</div>
+    <div class="preset-grid">
+      <button data-preset="spiral">Spiral galaxy</button>
+      <button data-preset="solar">Little solar system</button>
+      <button data-preset="binary">Binary stars</button>
+      <button data-preset="reef">Alien reef</button>
+      <button data-preset="storm">Comet storm</button>
+      <button data-preset="minimal">Zen orbit</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Actions</div>
+    <div class="row">
+      <button id="bloomBtn" class="good wide">Seed life bloom</button>
+      <button id="galaxyBtn" class="wide">Add galaxy</button>
+      <button id="cometBtn" class="wide">Comet rain</button>
+      <button id="photoBtn">PNG</button>
+      <button id="saveBtn">Save</button>
+      <button id="loadBtn">Load</button>
+    </div>
+  </div>
+</section>
+
+<aside class="rightdock" id="rightdock">
+  <div class="section">
+    <div class="row spread"><div class="label">Live readout</div><button id="aboutBtn" class="ghost">What is this?</button></div>
+    <div class="row" style="gap:6px">
+      <span class="pill">Bodies <b id="bodyCount">0</b></span>
+      <span class="pill">Life <b id="lifeCount">0</b></span>
+      <span class="pill">FPS <b id="fps">0</b></span>
+      <span class="pill">Age <b id="age">0s</b></span>
+    </div>
+    <div class="legend">
+      <span style="color:#ffdc96"><i class="sw" style="background:#ffdc96"></i>stars</span>
+      <span style="color:#94c9ff"><i class="sw" style="background:#94c9ff"></i>planets</span>
+      <span style="color:#b18cff"><i class="sw" style="background:#b18cff"></i>voids</span>
+      <span style="color:#a4ffbf"><i class="sw" style="background:#a4ffbf"></i>life sparks</span>
+    </div>
+  </div>
+  <div class="section">
+    <div class="label">Universe log</div>
+    <div class="log" id="log"></div>
+  </div>
+</aside>
+
+<div class="modal" id="modal">
+  <div class="dialog">
+    <button class="closex ghost" id="closeModal">Close</button>
+    <h2 id="modalTitle">Cosmic Garden</h2>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<input id="fileInput" type="file" accept="application/json" class="hidden" />
+
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('space');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const panel = document.getElementById('panel');
+  const rightdock = document.getElementById('rightdock');
+  const flash = document.getElementById('flash');
+  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+  const els = {
+    wonderScore: document.getElementById('wonderScore'), mood: document.getElementById('mood'),
+    toolHint: document.getElementById('toolHint'), tools: document.getElementById('tools'),
+    pauseBtn: document.getElementById('pauseBtn'), stepBtn: document.getElementById('stepBtn'), clearBtn: document.getElementById('clearBtn'), soundBtn: document.getElementById('soundBtn'),
+    gRange: document.getElementById('gRange'), tRange: document.getElementById('tRange'), trailRange: document.getElementById('trailRange'), birthRange: document.getElementById('birthRange'),
+    gOut: document.getElementById('gOut'), tOut: document.getElementById('tOut'), trailOut: document.getElementById('trailOut'), birthOut: document.getElementById('birthOut'),
+    collideBox: document.getElementById('collideBox'), wrapBox: document.getElementById('wrapBox'), autoBox: document.getElementById('autoBox'),
+    bodyCount: document.getElementById('bodyCount'), lifeCount: document.getElementById('lifeCount'), fps: document.getElementById('fps'), age: document.getElementById('age'),
+    bloomBtn: document.getElementById('bloomBtn'), galaxyBtn: document.getElementById('galaxyBtn'), cometBtn: document.getElementById('cometBtn'), photoBtn: document.getElementById('photoBtn'), saveBtn: document.getElementById('saveBtn'), loadBtn: document.getElementById('loadBtn'),
+    log: document.getElementById('log'), hideBtn: document.getElementById('hideBtn'), mobileToggle: document.getElementById('mobileToggle'),
+    modal: document.getElementById('modal'), modalTitle: document.getElementById('modalTitle'), modalBody: document.getElementById('modalBody'), closeModal: document.getElementById('closeModal'), aboutBtn: document.getElementById('aboutBtn'), fileInput: document.getElementById('fileInput')
+  };
+
+  const TAU = Math.PI * 2;
+  const rand = (a=1,b=0)=>Math.random()*(a-b)+b;
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const hypot = Math.hypot;
+  const palette = ['#88c7ff','#a6ffcb','#ffd58a','#ff9a9e','#c29bff','#9df0ff','#f8f7ff','#ffcf70'];
+
+  const state = {
+    w: 1, h: 1, cx: 0, cy: 0, paused: false, stepOnce: false,
+    tool: 'planet', bodies: [], dust: [], ripples: [], log: [],
+    age: 0, collisions: 0, births: 0, wonder: 0, lastFrame: performance.now(), fps: 60,
+    pointer: {down:false, x:0, y:0, sx:0, sy:0, button:0},
+    audio: null, audioOn: false,
+    settings: { G: .55, time: 1, trails: 110, birth: .32, collisions: true, wrap: false, autoLife: false }
+  };
+
+  function resize(){
+    state.w = Math.floor(innerWidth); state.h = Math.floor(innerHeight); state.cx = state.w/2; state.cy = state.h/2;
+    canvas.width = Math.floor(state.w * DPR); canvas.height = Math.floor(state.h * DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildDust();
+  }
+  window.addEventListener('resize', resize, {passive:true});
+
+  function buildDust(){
+    state.dust = [];
+    const n = Math.floor((state.w*state.h)/10500);
+    for(let i=0;i<n;i++){
+      state.dust.push({x:Math.random()*state.w,y:Math.random()*state.h,r:rand(1.6,.25),a:rand(.42,.06),h:rand(260,180),tw:rand(3,.2)});
+    }
+  }
+
+  class Body{
+    constructor(o){
+      this.id = crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random());
+      this.x=o.x; this.y=o.y; this.vx=o.vx||0; this.vy=o.vy||0; this.ax=0; this.ay=0;
+      this.type=o.type||'planet'; this.mass=o.mass||12; this.r=o.r||6; this.color=o.color||'#88c7ff';
+      this.trail=[]; this.life=o.life||0; this.seed=o.seed||Math.random()*1000; this.spin=rand(.04,-.04); this.temp=o.temp||0;
+      this.name=o.name||this.type; this.dead=false; this.orbitScore=0; this.age=0; this.glow=o.glow||0;
+    }
+    get isLife(){return this.type==='life'}
+    get isStar(){return this.type==='star'}
+    get isVoid(){return this.type==='blackhole'}
+  }
+
+  function addBody(o){
+    const b = new Body(o);
+    state.bodies.push(b);
+    return b;
+  }
+
+  function addPlanet(x,y,vx=0,vy=0, scale=1){
+    return addBody({type:'planet',x,y,vx,vy,mass:rand(28,7)*scale,r:rand(9,3.5)*Math.sqrt(scale),color:palette[Math.floor(Math.random()*palette.length)],glow:.2});
+  }
+  function addStar(x,y,vx=0,vy=0, scale=1){
+    return addBody({type:'star',x,y,vx,vy,mass:rand(900,420)*scale,r:rand(20,13)*Math.sqrt(scale),color:Math.random()<.55?'#ffdf9c':'#b7d8ff',glow:1});
+  }
+  function addVoid(x,y,vx=0,vy=0, scale=1){
+    return addBody({type:'blackhole',x,y,vx,vy,mass:rand(1700,850)*scale,r:rand(18,12)*Math.sqrt(scale),color:'#171025',glow:1});
+  }
+  function addLife(x,y,vx=0,vy=0){
+    return addBody({type:'life',x,y,vx,vy,mass:rand(2.4,.55),r:rand(3.8,1.8),color:'#a4ffbf',life:rand(16,8),glow:.8});
+  }
+
+  function log(msg){
+    const t = Math.floor(state.age);
+    state.log.unshift(`${t}s — ${msg}`);
+    state.log = state.log.slice(0,20);
+    els.log.innerHTML = state.log.map(s=>`<div>${escapeHTML(s)}</div>`).join('');
+  }
+  function escapeHTML(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function pulse(word='BLOOM'){
+    flash.textContent = word;
+    flash.classList.add('show');
+    setTimeout(()=>flash.classList.remove('show'), 260);
+  }
+
+  function clear(){
+    state.bodies = []; state.ripples=[]; state.age=0; state.collisions=0; state.births=0; state.wonder=0; state.log=[]; log('New void opened.');
+  }
+
+  function preset(name){
+    clear();
+    const w=state.w,h=state.h,cx=state.cx,cy=state.cy;
+    if(name==='spiral'){
+      addVoid(cx,cy,0,0,.55);
+      addStar(cx-40,cy+20,.12,-.18,.7);
+      for(let i=0;i<95;i++){
+        const arm = (i%3)*TAU/3;
+        const d = rand(Math.min(w,h)*.43,70);
+        const a = arm + d*.015 + rand(.55,-.55);
+        const x = cx + Math.cos(a)*d*rand(1.1,.72);
+        const y = cy + Math.sin(a)*d*rand(.72,1.1);
+        const speed = Math.sqrt(330/d) * rand(2.35,1.45);
+        addPlanet(x,y,-Math.sin(a)*speed,Math.cos(a)*speed,rand(1.1,.35));
+      }
+      log('A spiral galaxy rolled into being.'); pulse('SPIRAL');
+    } else if(name==='solar'){
+      addStar(cx,cy,0,0,1.15);
+      const radii=[75,125,180,250,330];
+      radii.forEach((d,i)=>{
+        const a=rand(TAU,0); const sp=Math.sqrt(1200/d)*1.4;
+        const p=addPlanet(cx+Math.cos(a)*d,cy+Math.sin(a)*d,-Math.sin(a)*sp,Math.cos(a)*sp, i===4?1.5:1);
+        p.color=palette[i%palette.length];
+      });
+      seedLife(cx+190,cy,22);
+      log('A small solar system found its first rhythm.'); pulse('ORBIT');
+    } else if(name==='binary'){
+      addStar(cx-80,cy,0,-1.2,.9); addStar(cx+80,cy,0,1.2,.9);
+      for(let i=0;i<45;i++){
+        const d=rand(Math.min(w,h)*.42,160), a=rand(TAU,0), sp=Math.sqrt(900/d)*rand(1.7,.9);
+        addPlanet(cx+Math.cos(a)*d,cy+Math.sin(a)*d,-Math.sin(a)*sp,Math.cos(a)*sp,rand(1.2,.45));
+      }
+      log('Twin stars began their dangerous dance.'); pulse('BINARY');
+    } else if(name==='reef'){
+      for(let i=0;i<5;i++) addStar(rand(w*.85,w*.15),rand(h*.78,h*.2),rand(.5,-.5),rand(.5,-.5),rand(.65,.32));
+      for(let i=0;i<90;i++) addLife(rand(w*.9,w*.1),rand(h*.85,h*.15),rand(1.5,-1.5),rand(1.5,-1.5));
+      for(let i=0;i<22;i++) addPlanet(rand(w*.9,w*.1),rand(h*.85,h*.15),rand(2,-2),rand(2,-2),rand(.65,.18));
+      log('A bioluminescent cosmic reef appeared.'); pulse('LIFE');
+    } else if(name==='storm'){
+      addStar(cx,cy,0,0,.9); cometRain(70); log('Comets entered from the dark edges.'); pulse('STORM');
+    } else if(name==='minimal'){
+      addStar(cx,cy,0,0,1);
+      addPlanet(cx+165,cy,0,2.95,1.4);
+      addPlanet(cx-260,cy,0,-2.15,.8);
+      log('A quiet two-orbit garden was planted.'); pulse('ZEN');
+    }
+  }
+
+  function seedLife(x=state.cx,y=state.cy,n=36){
+    for(let i=0;i<n;i++){
+      const a=rand(TAU,0), d=rand(82,4), sp=rand(2.3,.2);
+      addLife(x+Math.cos(a)*d,y+Math.sin(a)*d,Math.cos(a+Math.PI/2)*sp+rand(.5,-.5),Math.sin(a+Math.PI/2)*sp+rand(.5,-.5));
+    }
+    state.births += n; log(`${n} life sparks released.`); pulse('BLOOM');
+  }
+
+  function addGalaxy(x=state.cx,y=state.cy,n=55){
+    const central = Math.random()<.22 ? addVoid(x,y,rand(.3,-.3),rand(.3,-.3),.4) : addStar(x,y,rand(.3,-.3),rand(.3,-.3),.55);
+    for(let i=0;i<n;i++){
+      const d=rand(Math.min(state.w,state.h)*.22,28), a=rand(TAU,0), sp=Math.sqrt(central.mass/d)*rand(.16,.09);
+      addPlanet(x+Math.cos(a)*d,y+Math.sin(a)*d,-Math.sin(a)*sp+central.vx,Math.cos(a)*sp+central.vy,rand(.7,.18));
+    }
+    log('A pocket galaxy was added.'); pulse('GALAXY');
+  }
+
+  function cometRain(n=28){
+    const side = Math.floor(rand(4,0));
+    for(let i=0;i<n;i++){
+      let x,y,vx,vy;
+      if(side===0){x=rand(state.w,0);y=-20;vx=rand(1.8,-1.8);vy=rand(4.2,1.8)}
+      else if(side===1){x=state.w+20;y=rand(state.h,0);vx=rand(-1.8,-4.2);vy=rand(1.8,-1.8)}
+      else if(side===2){x=rand(state.w,0);y=state.h+20;vx=rand(1.8,-1.8);vy=rand(-1.8,-4.2)}
+      else {x=-20;y=rand(state.h,0);vx=rand(4.2,1.8);vy=rand(1.8,-1.8)}
+      const p=addPlanet(x,y,vx,vy,rand(.55,.12)); p.type='comet'; p.color='#dff4ff'; p.r*=.7; p.mass*=.45; p.glow=.7;
+    }
+    log(`${n} comets fell through the system.`); pulse('COMETS');
+  }
+
+  function update(dt){
+    if(state.paused && !state.stepOnce) return;
+    state.stepOnce=false;
+    const settings=state.settings;
+    const time = settings.time;
+    const substeps = time > 1.4 ? 2 : 1;
+    const stepDt = dt * time / substeps;
+    for(let s=0;s<substeps;s++) physics(stepDt);
+    state.age += dt*time;
+    if(settings.autoLife && Math.random() < settings.birth * dt * .22 && state.bodies.length < 220){
+      const stars = state.bodies.filter(b=>b.isStar);
+      if(stars.length){ const st=stars[Math.floor(Math.random()*stars.length)]; seedLife(st.x+rand(120,-120), st.y+rand(120,-120), Math.floor(rand(7,2))); }
+    }
+    updateAudio();
+  }
+
+  function physics(dt){
+    const bodies = state.bodies;
+    const G = state.settings.G * 46;
+    for(const b of bodies){ b.ax=0; b.ay=0; b.age += dt; }
+
+    for(let i=0;i<bodies.length;i++){
+      const a=bodies[i]; if(a.dead) continue;
+      for(let j=i+1;j<bodies.length;j++){
+        const b=bodies[j]; if(b.dead) continue;
+        let dx=b.x-a.x, dy=b.y-a.y;
+        let d2=dx*dx+dy*dy+28;
+        const d=Math.sqrt(d2);
+        const inv=1/d;
+        let force = G * a.mass * b.mass / d2;
+        if(a.isLife || b.isLife) force *= .24;
+        if(a.isVoid || b.isVoid) force *= 1.85;
+        const fx=force*dx*inv, fy=force*dy*inv;
+        a.ax += fx/a.mass; a.ay += fy/a.mass;
+        b.ax -= fx/b.mass; b.ay -= fy/b.mass;
+
+        if(state.settings.collisions && d < a.r+b.r){ collide(a,b,d,dx,dy); }
+      }
+    }
+
+    if(state.pointer.down && state.tool==='gravity'){
+      const p=state.pointer;
+      const power = (p.button===2 ? -1 : 1) * (420 + state.settings.birth*900);
+      for(const b of bodies){
+        const dx=p.x-b.x, dy=p.y-b.y, d2=dx*dx+dy*dy+800, d=Math.sqrt(d2);
+        if(d < 310){ const f=power/(d2); b.vx += dx/d*f*dt*70; b.vy += dy/d*f*dt*70; }
+      }
+    }
+
+    for(const b of bodies){
+      if(b.dead) continue;
+      if(b.isLife){ lifeBehaviour(b,dt); }
+      b.vx += b.ax*dt; b.vy += b.ay*dt;
+      const maxV = b.isVoid ? 5 : b.isLife ? 7.5 : 9;
+      const v=hypot(b.vx,b.vy); if(v>maxV){b.vx=b.vx/v*maxV; b.vy=b.vy/v*maxV;}
+      b.x += b.vx*dt*60; b.y += b.vy*dt*60;
+      b.trail.push([b.x,b.y]);
+      const maxTrail = state.settings.trails;
+      if(b.trail.length > maxTrail) b.trail.splice(0,b.trail.length-maxTrail);
+      edge(b);
+      if(b.isLife){ b.life -= dt*.33; if(b.life<=0) b.dead=true; }
+    }
+
+    state.bodies = bodies.filter(b => !b.dead && b.mass>.05 && Number.isFinite(b.x+b.y+b.vx+b.vy));
+    if(state.bodies.length>260) state.bodies.splice(0,state.bodies.length-260);
+  }
+
+  function lifeBehaviour(b,dt){
+    const stars = state.bodies.filter(x=>x.isStar);
+    if(stars.length){
+      let best=null,bd=Infinity;
+      for(const s of stars){ const d=(s.x-b.x)**2+(s.y-b.y)**2; if(d<bd){bd=d;best=s;} }
+      if(best){
+        const dx=best.x-b.x, dy=best.y-b.y, d=Math.sqrt(bd)||1;
+        const desired=clamp((d-95)/120,-.7,1.2);
+        b.vx += dx/d*desired*dt*.32 + -dy/d*.05*dt;
+        b.vy += dy/d*desired*dt*.32 + dx/d*.05*dt;
+        if(d<170 && Math.random()<state.settings.birth*dt*.055 && state.bodies.length<245){
+          addLife(b.x+rand(14,-14),b.y+rand(14,-14),b.vx+rand(1,-1),b.vy+rand(1,-1)); state.births++;
+        }
+      }
+    }
+    b.vx += Math.sin(state.age*2+b.seed)*dt*.18; b.vy += Math.cos(state.age*1.7+b.seed)*dt*.18;
+  }
+
+  function collide(a,b,d,dx,dy){
+    if(a.dead||b.dead) return;
+    if(a.isVoid || b.isVoid){
+      const v = a.isVoid?a:b; const o = a.isVoid?b:a;
+      v.mass += o.mass*.06; v.r = Math.min(38, v.r + o.r*.015); o.dead=true;
+      ripple(o.x,o.y,'#b18cff',70); state.collisions++; if(o.isStar) log('A star was swallowed by a void.'); return;
+    }
+    if(a.isStar || b.isStar){
+      const st = a.isStar?a:b; const o=a.isStar?b:a;
+      if(o.isLife){ o.life += 1.7; o.vx *= -0.3; o.vy *= -0.3; return; }
+      st.mass += o.mass*.08; st.r = Math.min(34, st.r + o.r*.025); o.dead=true; state.collisions++; ripple(o.x,o.y,'#ffdf9c',80);
+      if(Math.random()<.26) seedLife(st.x+rand(80,-80),st.y+rand(80,-80),Math.floor(rand(11,3)));
+      return;
+    }
+    if(a.isLife && b.isLife){
+      if(Math.random()<state.settings.birth*.035 && state.bodies.length<240) addLife((a.x+b.x)/2,(a.y+b.y)/2,rand(1,-1),rand(1,-1));
+      return;
+    }
+    if(a.isLife || b.isLife){
+      const l=a.isLife?a:b; l.vx*=-.65; l.vy*=-.65; l.life-=.7; return;
+    }
+    const nx=dx/(d||1), ny=dy/(d||1);
+    const overlap=(a.r+b.r-d)*.5;
+    a.x-=nx*overlap; a.y-=ny*overlap; b.x+=nx*overlap; b.y+=ny*overlap;
+    const tx=-ny, ty=nx;
+    const dpTanA=a.vx*tx+a.vy*ty, dpTanB=b.vx*tx+b.vy*ty;
+    const dpNormA=a.vx*nx+a.vy*ny, dpNormB=b.vx*nx+b.vy*ny;
+    const mA=(dpNormA*(a.mass-b.mass)+2*b.mass*dpNormB)/(a.mass+b.mass);
+    const mB=(dpNormB*(b.mass-a.mass)+2*a.mass*dpNormA)/(a.mass+b.mass);
+    a.vx=tx*dpTanA+nx*mA*.92; a.vy=ty*dpTanA+ny*mA*.92;
+    b.vx=tx*dpTanB+nx*mB*.92; b.vy=ty*dpTanB+ny*mB*.92;
+    state.collisions++; if(Math.random()<.1) ripple((a.x+b.x)/2,(a.y+b.y)/2,'#88c7ff',45);
+  }
+
+  function edge(b){
+    const margin=80;
+    if(state.settings.wrap){
+      if(b.x<-margin)b.x=state.w+margin; if(b.x>state.w+margin)b.x=-margin; if(b.y<-margin)b.y=state.h+margin; if(b.y>state.h+margin)b.y=-margin;
+    } else {
+      if(b.x<-220||b.x>state.w+220||b.y<-220||b.y>state.h+220){ b.dead=true; return; }
+      if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx)*.7} if(b.x>state.w-b.r){b.x=state.w-b.r;b.vx=-Math.abs(b.vx)*.7}
+      if(b.y<b.r){b.y=b.r;b.vy=Math.abs(b.vy)*.7} if(b.y>state.h-b.r){b.y=state.h-b.r;b.vy=-Math.abs(b.vy)*.7}
+    }
+  }
+
+  function ripple(x,y,color='#8bd3ff',life=60){ state.ripples.push({x,y,r:2,color,life,max:life}); }
+
+  function draw(){
+    const t=state.age;
+    ctx.globalCompositeOperation='source-over';
+    ctx.fillStyle='rgba(2,3,10,0.42)'; ctx.fillRect(0,0,state.w,state.h);
+    drawBackground(t);
+    drawTrails();
+    drawBodies(t);
+    drawRipples();
+    drawPointer();
+  }
+
+  function drawBackground(t){
+    const g=ctx.createRadialGradient(state.cx,state.cy,30,state.cx,state.cy,Math.max(state.w,state.h)*.8);
+    g.addColorStop(0,'rgba(20,28,68,.30)'); g.addColorStop(.55,'rgba(6,9,22,.38)'); g.addColorStop(1,'rgba(1,2,7,1)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,state.w,state.h);
+    ctx.globalCompositeOperation='lighter';
+    for(const s of state.dust){
+      const a=s.a*(.7+.3*Math.sin(t*s.tw+s.x*.01));
+      ctx.fillStyle=`hsla(${s.h},90%,78%,${a})`;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.fill();
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+
+  function drawTrails(){
+    if(state.settings.trails<=0) return;
+    ctx.globalCompositeOperation='lighter';
+    for(const b of state.bodies){
+      if(b.trail.length<3) continue;
+      ctx.lineWidth = b.isLife ? .7 : b.isVoid ? 1.6 : 1.1;
+      const alphaBase = b.isLife ? .20 : b.isStar ? .18 : .14;
+      for(let i=1;i<b.trail.length;i++){
+        const a=i/b.trail.length*alphaBase;
+        ctx.strokeStyle=hexToRgba(b.color,a);
+        ctx.beginPath(); ctx.moveTo(b.trail[i-1][0],b.trail[i-1][1]); ctx.lineTo(b.trail[i][0],b.trail[i][1]); ctx.stroke();
+      }
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+
+  function drawBodies(t){
+    for(const b of state.bodies){
+      if(b.isStar) drawStar(b,t); else if(b.isVoid) drawVoid(b,t); else if(b.isLife) drawLife(b,t); else drawPlanet(b,t);
+    }
+  }
+  function glow(x,y,r,color,alpha=.3){
+    const gr=ctx.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,hexToRgba(color,alpha)); gr.addColorStop(.32,hexToRgba(color,alpha*.18)); gr.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill(); ctx.globalCompositeOperation='source-over';
+  }
+  function drawStar(b,t){
+    glow(b.x,b.y,b.r*5.2,b.color,.52);
+    const pulse=1+Math.sin(t*3+b.seed)*.06;
+    const gr=ctx.createRadialGradient(b.x-b.r*.25,b.y-b.r*.35,1,b.x,b.y,b.r*pulse);
+    gr.addColorStop(0,'#ffffff'); gr.addColorStop(.22,b.color); gr.addColorStop(1,'#ff925f');
+    ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(b.x,b.y,b.r*pulse,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=1; ctx.stroke();
+  }
+  function drawVoid(b,t){
+    glow(b.x,b.y,b.r*5.8,'#7c5cff',.34);
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(t*.7+b.seed);
+    const gr=ctx.createRadialGradient(0,0,0,0,0,b.r*2.0);
+    gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(.45,'rgba(16,10,28,1)'); gr.addColorStop(.7,'rgba(126,92,255,.35)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gr; ctx.beginPath(); ctx.ellipse(0,0,b.r*2.1,b.r*.72,0,0,TAU); ctx.fill();
+    ctx.fillStyle='black'; ctx.beginPath(); ctx.arc(0,0,b.r*.82,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(204,180,255,.45)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(0,0,b.r*1.08,0,TAU); ctx.stroke(); ctx.restore();
+  }
+  function drawPlanet(b,t){
+    glow(b.x,b.y,b.r*2.6,b.color,b.type==='comet'?.28:.13);
+    const gr=ctx.createRadialGradient(b.x-b.r*.35,b.y-b.r*.45,1,b.x,b.y,b.r*1.3);
+    gr.addColorStop(0,'#ffffff'); gr.addColorStop(.18,b.color); gr.addColorStop(1,'#101425');
+    ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,TAU); ctx.fill();
+    if(b.type==='comet'){
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle='rgba(220,244,255,.28)'; ctx.lineWidth=b.r*.8; ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.x-b.vx*20,b.y-b.vy*20); ctx.stroke(); ctx.globalCompositeOperation='source-over';
+    } else {
+      ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,TAU); ctx.stroke();
+    }
+  }
+  function drawLife(b,t){
+    const pulse=1+Math.sin(t*5+b.seed)*.18;
+    glow(b.x,b.y,b.r*5,'#a4ffbf',.25);
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=`rgba(164,255,191,${clamp(b.life/16,.25,1)})`;
+    ctx.beginPath(); ctx.arc(b.x,b.y,b.r*pulse,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=.8; ctx.stroke();
+    ctx.globalCompositeOperation='source-over';
+  }
+  function drawRipples(){
+    for(const r of state.ripples){
+      const a=r.life/r.max; r.r += (1-a)*1.9 + .45; r.life -= 1;
+      ctx.strokeStyle=hexToRgba(r.color,a*.35); ctx.lineWidth=2*a; ctx.beginPath(); ctx.arc(r.x,r.y,r.r,0,TAU); ctx.stroke();
+    }
+    state.ripples = state.ripples.filter(r=>r.life>0);
+  }
+  function drawPointer(){
+    const p=state.pointer;
+    if(!p.down || state.tool==='gravity' || state.tool==='life') return;
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle='rgba(139,211,255,.75)'; ctx.lineWidth=2; ctx.setLineDash([7,7]);
+    ctx.beginPath(); ctx.moveTo(p.sx,p.sy); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(139,211,255,.9)'; ctx.beginPath(); ctx.arc(p.sx,p.sy,4,0,TAU); ctx.fill();
+    const ang=Math.atan2(p.y-p.sy,p.x-p.sx), len=16;
+    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-Math.cos(ang-.45)*len,p.y-Math.sin(ang-.45)*len); ctx.lineTo(p.x-Math.cos(ang+.45)*len,p.y-Math.sin(ang+.45)*len); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function hexToRgba(hex,a){
+    if(hex[0] !== '#') return hex;
+    const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+
+  function metrics(){
+    const n=state.bodies.length, life=state.bodies.filter(b=>b.isLife).length, stars=state.bodies.filter(b=>b.isStar).length, voids=state.bodies.filter(b=>b.isVoid).length;
+    const planets=n-life-stars-voids;
+    const kinetic = state.bodies.reduce((s,b)=>s+hypot(b.vx,b.vy)*b.mass,0)/(n||1);
+    const diversity = Math.min(30, (stars>0?8:0)+(life>0?10:0)+(voids>0?5:0)+Math.min(10,planets/5));
+    const stability = clamp(35 - Math.abs(kinetic-38)*.45 - state.collisions*.12, 0, 35);
+    const vitality = clamp(life*.72 + state.births*.04, 0, 35);
+    state.wonder = Math.round(clamp(diversity+stability+vitality,0,100));
+    els.wonderScore.textContent=state.wonder;
+    els.mood.textContent = state.wonder<15?'quiet void':state.wonder<35?'forming system':state.wonder<60?'living chaos':state.wonder<82?'cosmic garden':'impossible beauty';
+    els.bodyCount.textContent=n; els.lifeCount.textContent=life; els.age.textContent=`${Math.floor(state.age)}s`;
+  }
+
+  function loop(now){
+    const rawdt = Math.min(.05,(now-state.lastFrame)/1000 || .016); state.lastFrame=now;
+    state.fps = state.fps*.92 + (1/rawdt)*.08; els.fps.textContent=Math.round(state.fps);
+    update(rawdt); draw(); metrics(); requestAnimationFrame(loop);
+  }
+
+  function pointerPos(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  canvas.addEventListener('pointerdown', e=>{
+    canvas.setPointerCapture(e.pointerId); const p=pointerPos(e);
+    Object.assign(state.pointer,{down:true,x:p.x,y:p.y,sx:p.x,sy:p.y,button:e.button});
+    if(state.tool==='life'){ seedLife(p.x,p.y,Math.floor(rand(28,10))); }
+    if(state.tool==='gravity'){ ripple(p.x,p.y,e.button===2?'#ff9a7a':'#8bd3ff',48); }
+  });
+  canvas.addEventListener('pointermove', e=>{
+    const p=pointerPos(e); state.pointer.x=p.x; state.pointer.y=p.y;
+    if(state.pointer.down && state.tool==='life' && Math.random()<.26){ addLife(p.x+rand(16,-16),p.y+rand(16,-16),rand(2,-2),rand(2,-2)); }
+  });
+  canvas.addEventListener('pointerup', e=>{
+    const p=state.pointer; if(!p.down) return; p.down=false;
+    const vx=(p.sx-p.x)/24, vy=(p.sy-p.y)/24; const speed=hypot(vx,vy);
+    if(state.tool==='planet'){ const b=addPlanet(p.sx,p.sy,vx,vy,clamp(speed*.28+.55,.25,2.2)); log('A planet was launched.'); }
+    else if(state.tool==='star'){ addStar(p.sx,p.sy,vx*.35,vy*.35,clamp(speed*.08+.75,.55,1.6)); log('A star was placed into motion.'); pulse('STAR'); }
+    else if(state.tool==='blackhole'){ addVoid(p.sx,p.sy,vx*.22,vy*.22,clamp(speed*.05+.55,.45,1.45)); log('A hungry void opened.'); pulse('VOID'); }
+  });
+
+  function setTool(tool){
+    state.tool=tool;
+    [...els.tools.querySelectorAll('button')].forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));
+    const hints={planet:'Drag to launch a planet. Longer drag = faster orbit attempt.',star:'Drag to place a star with gentle motion. Stars nourish life and pull planets.',blackhole:'Drag to create a void. It bends the whole garden and eats carelessly.',life:'Click or paint to release living sparks. They gather near stars and sometimes reproduce.',gravity:'Hold and drag to attract bodies. Right-click/secondary drag repels.'};
+    els.toolHint.textContent=hints[tool]||'';
+  }
+  els.tools.addEventListener('click',e=>{ const b=e.target.closest('button[data-tool]'); if(b) setTool(b.dataset.tool); });
+
+  function bindRange(input,out,fmt,assign){
+    const update=()=>{ const v=Number(input.value); out.textContent=fmt(v); assign(v); };
+    input.addEventListener('input',update); update();
+  }
+  bindRange(els.gRange,els.gOut,v=>v.toFixed(2),v=>state.settings.G=v);
+  bindRange(els.tRange,els.tOut,v=>v.toFixed(2)+'×',v=>state.settings.time=v);
+  bindRange(els.trailRange,els.trailOut,v=>String(v),v=>state.settings.trails=v);
+  bindRange(els.birthRange,els.birthOut,v=>v.toFixed(2),v=>state.settings.birth=v);
+  els.collideBox.addEventListener('change',()=>state.settings.collisions=els.collideBox.checked);
+  els.wrapBox.addEventListener('change',()=>state.settings.wrap=els.wrapBox.checked);
+  els.autoBox.addEventListener('change',()=>state.settings.autoLife=els.autoBox.checked);
+
+  els.pauseBtn.onclick=()=>{state.paused=!state.paused; els.pauseBtn.textContent=state.paused?'Resume':'Pause'; log(state.paused?'Time paused.':'Time resumed.');};
+  els.stepBtn.onclick=()=>{state.stepOnce=true;};
+  els.clearBtn.onclick=()=>{clear(); preset('minimal');};
+  els.bloomBtn.onclick=()=>seedLife(rand(state.w*.8,state.w*.2),rand(state.h*.75,state.h*.2),Math.floor(rand(70,30)));
+  els.galaxyBtn.onclick=()=>addGalaxy(rand(state.w*.8,state.w*.2),rand(state.h*.75,state.h*.2),Math.floor(rand(70,38)));
+  els.cometBtn.onclick=()=>cometRain(Math.floor(rand(50,22)));
+  document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>preset(b.dataset.preset)));
+  els.photoBtn.onclick=()=>downloadPNG();
+  els.saveBtn.onclick=()=>saveJSON();
+  els.loadBtn.onclick=()=>els.fileInput.click();
+  els.hideBtn.onclick=togglePanels; els.mobileToggle.onclick=()=>panel.classList.toggle('collapsed');
+  els.closeModal.onclick=()=>els.modal.classList.remove('open');
+  els.modal.addEventListener('click',e=>{if(e.target===els.modal) els.modal.classList.remove('open');});
+  els.aboutBtn.onclick=()=>showAbout();
+  els.soundBtn.onclick=()=>toggleSound();
+
+  function togglePanels(){
+    const hidden = panel.classList.toggle('hidden'); rightdock.classList.toggle('hidden',hidden); document.querySelector('.help').classList.toggle('hidden',hidden); els.hideBtn.textContent=hidden?'Show':'Hide';
+  }
+  window.addEventListener('keydown',e=>{
+    if(e.target.matches('input,textarea,select')) return;
+    if(e.code==='Space'){e.preventDefault(); els.pauseBtn.click();}
+    if(e.key==='1')setTool('planet'); if(e.key==='2')setTool('star'); if(e.key==='3')setTool('blackhole'); if(e.key==='4')setTool('life'); if(e.key==='5')setTool('gravity');
+    if(e.key.toLowerCase()==='g')addGalaxy(); if(e.key.toLowerCase()==='l')seedLife(); if(e.key.toLowerCase()==='c')cometRain(); if(e.key.toLowerCase()==='r')els.clearBtn.click(); if(e.key.toLowerCase()==='h')togglePanels();
+  });
+
+  function saveJSON(){
+    const data={version:1,settings:state.settings,age:state.age,bodies:state.bodies.map(b=>({type:b.type,x:b.x,y:b.y,vx:b.vx,vy:b.vy,mass:b.mass,r:b.r,color:b.color,life:b.life,seed:b.seed,glow:b.glow}))};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cosmic-garden-save.json'; a.click(); URL.revokeObjectURL(a.href); log('Universe state saved as JSON.');
+  }
+  els.fileInput.addEventListener('change',async()=>{
+    const file=els.fileInput.files[0]; if(!file) return;
+    try{
+      const data=JSON.parse(await file.text()); clear(); Object.assign(state.settings,data.settings||{}); syncControls(); state.age=data.age||0; (data.bodies||[]).forEach(o=>addBody(o)); log('Saved universe loaded.'); pulse('LOADED');
+    }catch(err){alert('Could not load that JSON save.');}
+    els.fileInput.value='';
+  });
+  function syncControls(){
+    els.gRange.value=state.settings.G; els.gOut.textContent=Number(state.settings.G).toFixed(2);
+    els.tRange.value=state.settings.time; els.tOut.textContent=Number(state.settings.time).toFixed(2)+'×';
+    els.trailRange.value=state.settings.trails; els.trailOut.textContent=String(state.settings.trails);
+    els.birthRange.value=state.settings.birth; els.birthOut.textContent=Number(state.settings.birth).toFixed(2);
+    els.collideBox.checked=state.settings.collisions; els.wrapBox.checked=state.settings.wrap; els.autoBox.checked=state.settings.autoLife;
+  }
+  function downloadPNG(){
+    draw(); const a=document.createElement('a'); a.download='cosmic-garden.png'; a.href=canvas.toDataURL('image/png'); a.click(); log('Snapshot exported as PNG.');
+  }
+
+  function showAbout(){
+    els.modalTitle.textContent='What this app is';
+    els.modalBody.innerHTML=`
+      <p><strong style="color:var(--text)">Cosmic Garden</strong> is a single-file browser toy: part gravity sandbox, part digital aquarium, part accidental art machine.</p>
+      <p>The point is not to be productive. The point is to make something that feels alive enough to poke. You can launch planets, place stars, open voids, seed life, create storms, save a universe, and export a picture.</p>
+      <ul>
+        <li><strong style="color:var(--text)">Planets</strong> orbit, collide, drift, or escape.</li>
+        <li><strong style="color:var(--text)">Stars</strong> pull strongly and nourish life sparks.</li>
+        <li><strong style="color:var(--text)">Voids</strong> bend motion and swallow bodies.</li>
+        <li><strong style="color:var(--text)">Life sparks</strong> wander toward stars and sometimes reproduce.</li>
+        <li><strong style="color:var(--text)">Wonder</strong> is a rough live score based on variety, stability, life, and chaos.</li>
+      </ul>
+      <p>Everything is in this one HTML file: canvas, physics, controls, save/load, audio, and export.</p>`;
+    els.modal.classList.add('open');
+  }
+
+  function initAudio(){
+    const A=window.AudioContext||window.webkitAudioContext; if(!A) return null;
+    const ac=new A(); const gain=ac.createGain(); gain.gain.value=.0001; gain.connect(ac.destination);
+    const osc1=ac.createOscillator(), osc2=ac.createOscillator(), osc3=ac.createOscillator();
+    const g1=ac.createGain(), g2=ac.createGain(), g3=ac.createGain();
+    osc1.type='sine'; osc2.type='triangle'; osc3.type='sine';
+    g1.gain.value=.045; g2.gain.value=.025; g3.gain.value=.018;
+    osc1.connect(g1); osc2.connect(g2); osc3.connect(g3); g1.connect(gain); g2.connect(gain); g3.connect(gain);
+    osc1.start(); osc2.start(); osc3.start();
+    return {ac,gain,osc1,osc2,osc3};
+  }
+  async function toggleSound(){
+    if(!state.audio) state.audio=initAudio(); if(!state.audio) return alert('WebAudio is not available in this browser.');
+    if(state.audio.ac.state==='suspended') await state.audio.ac.resume();
+    state.audioOn=!state.audioOn; els.soundBtn.textContent=state.audioOn?'Mute':'Sound';
+    state.audio.gain.gain.linearRampToValueAtTime(state.audioOn?.15:.0001,state.audio.ac.currentTime+.4);
+  }
+  function updateAudio(){
+    if(!state.audio || !state.audioOn) return;
+    const ac=state.audio.ac; const stars=state.bodies.filter(b=>b.isStar).length, life=state.bodies.filter(b=>b.isLife).length, voids=state.bodies.filter(b=>b.isVoid).length;
+    const base=80 + stars*18 + state.wonder*.7;
+    state.audio.osc1.frequency.linearRampToValueAtTime(base,ac.currentTime+.2);
+    state.audio.osc2.frequency.linearRampToValueAtTime(base*1.5 + life*.4,ac.currentTime+.2);
+    state.audio.osc3.frequency.linearRampToValueAtTime(42 + voids*18 + Math.sin(state.age)*8,ac.currentTime+.2);
+    state.audio.gain.gain.linearRampToValueAtTime(.055 + Math.min(.10,state.wonder/900),ac.currentTime+.5);
+  }
+
+  resize(); setTool('planet'); clear(); preset('spiral'); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
